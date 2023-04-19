@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 )
@@ -21,6 +22,30 @@ func (p *Pet) FromJSON(r io.Reader) error {
 	return e.Decode(p)
 }
 
+func AddPet(p *Pet) {
+	petList = append(petList, p)
+}
+
+func UpdatePet(id int, p *Pet) error {
+	pos, err := FindPet(id)
+	if err != nil {
+		return err
+	}
+	p.ID = id
+	petList[pos] = p
+	return nil
+}
+
+func FindPet(id int) (int, error) {
+	for i, p := range petList {
+		if p.ID == id {
+			return i, nil
+		}
+	}
+
+	return -1, fmt.Errorf("product not found")
+}
+
 type Pets []*Pet
 
 func (p *Pets) ToJSON(w io.Writer) error {
@@ -29,10 +54,10 @@ func (p *Pets) ToJSON(w io.Writer) error {
 }
 
 func GetPets() Pets {
-	return PetList
+	return petList
 }
 
-var PetList = []*Pet{
+var petList = []*Pet{
 	{
 		ID:        1,
 		Name:      "Mimi",
