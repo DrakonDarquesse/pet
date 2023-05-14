@@ -14,7 +14,7 @@ type Pet struct {
 	// Description string
 	Sex       string `json:"gender"`
 	Age       int    `json:"age"`
-	KeptSince string `json:"Kept Since"`
+	KeptSince string `json:"kept since"`
 }
 
 func (p *Pet) FromJSON(r io.Reader) error {
@@ -66,3 +66,14 @@ var petList = []*Pet{
 		KeptSince: time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String(),
 	},
 }
+
+// sqlStatement := `
+// INSERT INTO pets (name, gender, age, keptsince)
+// VALUES ($1, $2, $3, $4)
+// RETURNING id`
+// id := 0
+// err = db.QueryRow(sqlStatement, "Mimi", "m", 1, time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String()).Scan(&id)
+// if err != nil {
+// 	panic(err)
+// }
+// fmt.Println("New record ID is:", id)

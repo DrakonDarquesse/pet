@@ -39,16 +39,18 @@ func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle POST Pet")
 
-	// fetch the pets from datastore
 	pet := &data.Pet{}
 
 	//  decode data
 	err := pet.FromJSON(r.Body)
 	if err != nil {
 		http.Error(w, "Unable to decode json", http.StatusBadRequest)
+		return
 	}
 	p.l.Printf("Pet: %#v", pet)
 	data.AddPet(pet)
+	w.Write([]byte("Create Success"))
+
 }
 
 func (p Pets) UpdatePet(w http.ResponseWriter, r *http.Request) {
