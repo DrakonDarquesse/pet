@@ -5,21 +5,34 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type Pet struct {
 	ID   int    `json:"-"`
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 	// Animal
 	// Description string
-	Sex       string `json:"gender"`
-	Age       int    `json:"age"`
-	KeptSince string `json:"kept since"`
+	Sex       string `json:"gender" validate:"required"`
+	Age       int    `json:"age" validate:"gte=0, lte=100"`
+	KeptSince string `json:"kept since" validate:"date"`
 }
 
 func (p *Pet) FromJSON(r io.Reader) error {
 	e := json.NewDecoder(r)
 	return e.Decode(p)
+}
+
+func (p *Pet) Validate() error {
+	validate := validator.New()
+	validate.RegisterValidation("date", validateDate)
+	return validate.Struct(p)
+}
+
+func validateDate(fl validator.FieldLevel) bool {
+	_, err := time.Parse("01/02/2006", fl.Field().String())
+	return err != nil
 }
 
 func AddPet(p *Pet) {
@@ -36,6 +49,17 @@ func UpdatePet(id int, p *Pet) error {
 	return nil
 }
 
+func DeletePet(id int) error {
+	_, err := FindPet(id)
+	if err != nil {
+		return err
+	}
+
+	// perform delete
+
+	return nil
+}
+
 func FindPet(id int) (int, error) {
 	for i, p := range petList {
 		if p.ID == id {
@@ -43,7 +67,7 @@ func FindPet(id int) (int, error) {
 		}
 	}
 
-	return -1, fmt.Errorf("product not found")
+	return -1, fmt.Errorf("pet not found")
 }
 
 type Pets []*Pet
