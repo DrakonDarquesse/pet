@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/drakondarquesse/pet/data"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // Needs further refactoring to make it reusable
@@ -38,6 +38,8 @@ func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 	petList := data.GetPets()
 
 	p.pets.All()
+
+	w.Header().Set("Content-Type", "application/json")
 
 	// serialize to JSON
 	err := petList.ToJSON(w)

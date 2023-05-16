@@ -8,7 +8,7 @@ WORKDIR /go/src/app
 # copy files from src to dest
 COPY . .
 RUN go get -d -v ./...
-RUN go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o /go/bin/app
 
 #final stage
 FROM alpine:latest

@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/drakondarquesse/pet/handlers"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
 )
 
@@ -44,6 +45,18 @@ func main() {
 	sm.Use(middleware.RequestID)
 	sm.Use(middleware.Logger)
 	sm.Use(middleware.Recoverer)
+
+	// specify who is allowed to connect
+	sm.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	sm.Use(middleware.Heartbeat("/ping"))
 
 	l := log.New(os.Stdout, "api", log.LstdFlags)
 	hh := handlers.NewHello(l)

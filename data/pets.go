@@ -16,8 +16,8 @@ type Pet struct {
 	// Animal
 	// Description string
 	Sex       string `json:"gender" validate:"required"`
-	Age       int    `json:"age" validate:"gte=0, lte=100"`
-	KeptSince string `json:"kept since" validate:"date"`
+	Age       int    `json:"age,omitempty" validate:"gte=0, lte=100"`
+	KeptSince string `json:"kept since,omitempty" validate:"date"`
 }
 
 // A custom PetModel that wraps sql.DB connection pool
@@ -96,6 +96,7 @@ type Pets []*Pet
 
 func (p *Pets) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
+	e.SetIndent("", "\t")
 	return e.Encode(p)
 }
 
