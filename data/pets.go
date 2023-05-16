@@ -16,7 +16,7 @@ type Pet struct {
 	// Animal
 	// Description string
 	Sex       string `json:"gender" validate:"required"`
-	Age       int    `json:"age,omitempty" validate:"gte=0, lte=100"`
+	Age       int    `json:"age,omitempty" validate:"gte=0,lte=100"`
 	KeptSince string `json:"kept since,omitempty" validate:"date"`
 }
 
@@ -30,6 +30,12 @@ func (p *Pet) FromJSON(r io.Reader) error {
 	return e.Decode(p)
 }
 
+func (p *Pet) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	e.SetIndent("", "\t")
+	return e.Encode(p)
+}
+
 func (p *Pet) Validate() error {
 	validate := validator.New()
 	validate.RegisterValidation("date", validateDate)
@@ -37,8 +43,25 @@ func (p *Pet) Validate() error {
 }
 
 func (m PetModel) All() ([]Pet, error) {
-	// rows, err := m.DB.Query("SELECT * FROM books")
+	rows, err := m.DB.Query("SELECT * FROM pets")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 	var pets []Pet
+
+	// Loop through rows, using Scan to assign column data to struct fields
+	for rows.Next() {
+		pet := Pet{}
+		if err := rows.Scan(&pet.ID, &pet.Name, &pet.Sex, &pet.Age, &pet.KeptSince); err != nil {
+			return pets, err
+		}
+		pets = append(pets, pet)
+	}
+	if err = rows.Err(); err != nil {
+		return pets, err
+	}
+
 	return pets, nil
 }
 
@@ -109,7 +132,7 @@ var petList = []*Pet{
 		ID:        1,
 		Name:      "Mimi",
 		Sex:       "Male",
-		Age:       1,
+		Age:       2,
 		KeptSince: time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String(),
 	},
 }

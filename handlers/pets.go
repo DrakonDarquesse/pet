@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -37,12 +38,20 @@ func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 	// fetch the pets from datastore
 	petList := data.GetPets()
 
-	p.pets.All()
+	pets, err := p.pets.All()
+
+	if err != nil {
+		p.l.Printf("Error: %#v", err)
+	}
+
+	e := json.NewEncoder(w)
+	e.SetIndent("", "\t")
+	e.Encode(pets)
 
 	w.Header().Set("Content-Type", "application/json")
 
 	// serialize to JSON
-	err := petList.ToJSON(w)
+	err = petList.ToJSON(w)
 	if err != nil {
 		http.Error(w, "Unable to marshal json", http.StatusInternalServerError)
 	}
