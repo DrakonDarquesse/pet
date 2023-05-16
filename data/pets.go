@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,11 @@ type Pet struct {
 	KeptSince string `json:"kept since" validate:"date"`
 }
 
+// A custom PetModel that wraps sql.DB connection pool
+type PetModel struct {
+	DB *sql.DB
+}
+
 func (p *Pet) FromJSON(r io.Reader) error {
 	e := json.NewDecoder(r)
 	return e.Decode(p)
@@ -30,6 +36,12 @@ func (p *Pet) Validate() error {
 	return validate.Struct(p)
 }
 
+func (m PetModel) All() ([]Pet, error) {
+	// rows, err := m.DB.Query("SELECT * FROM books")
+	var pets []Pet
+	return pets, nil
+}
+
 func validateDate(fl validator.FieldLevel) bool {
 	_, err := time.Parse("01/02/2006", fl.Field().String())
 	return err != nil
@@ -37,6 +49,16 @@ func validateDate(fl validator.FieldLevel) bool {
 
 func AddPet(p *Pet) {
 	petList = append(petList, p)
+	// var sqlStatement = `
+	// INSERT INTO pets (name, gender, age, keptsince)
+	// VALUES ($1, $2, $3, $4)
+	// RETURNING id`
+	// id := 0
+	// err = db.QueryRow(sqlStatement, "Mimi", "m", 1, time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String()).Scan(&id)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println("New record ID is:", id)
 }
 
 func UpdatePet(id int, p *Pet) error {
@@ -90,14 +112,3 @@ var petList = []*Pet{
 		KeptSince: time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String(),
 	},
 }
-
-// sqlStatement := `
-// INSERT INTO pets (name, gender, age, keptsince)
-// VALUES ($1, $2, $3, $4)
-// RETURNING id`
-// id := 0
-// err = db.QueryRow(sqlStatement, "Mimi", "m", 1, time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String()).Scan(&id)
-// if err != nil {
-// 	panic(err)
-// }
-// fmt.Println("New record ID is:", id)

@@ -47,7 +47,7 @@ func main() {
 
 	l := log.New(os.Stdout, "api", log.LstdFlags)
 	hh := handlers.NewHello(l)
-	ph := handlers.NewPets(l)
+	ph := handlers.NewPets(l, db)
 
 	sm.Handle("/hello", hh)
 

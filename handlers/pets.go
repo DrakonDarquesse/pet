@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,18 +11,24 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// Needs further refactoring to make it reusable
 type Pets struct {
-	l *log.Logger
+	l    *log.Logger
+	pets interface {
+		All() ([]data.Pet, error)
+	}
 }
 
-func NewPets(l *log.Logger) *Pets {
-	return &Pets{l}
+// Initialize Pets with logger and PetModel
+func NewPets(l *log.Logger, db *sql.DB) *Pets {
+	return &Pets{l, data.PetModel{DB: db}}
 }
 
 func (p Pets) MountRoutes(r chi.Router) {
 	r.Get("/", p.GetPets)
 	r.Post("/add", p.AddPet)
 	r.Put("/{id:[0-9]+}", p.UpdatePet)
+	r.Delete("/{id:[0-9]+}", p.DeletePet)
 }
 
 func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +36,8 @@ func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 
 	// fetch the pets from datastore
 	petList := data.GetPets()
+
+	p.pets.All()
 
 	// serialize to JSON
 	err := petList.ToJSON(w)
