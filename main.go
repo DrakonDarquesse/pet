@@ -75,9 +75,6 @@ func main() {
 		IdleTimeout: 120 * time.Second,
 	}
 
-	// run a server
-	// http.ListenAndServe(":9898", sm)
-
 	// a goroutine to run the server so it doesn't block
 	go func() {
 		err := s.ListenAndServe()

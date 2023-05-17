@@ -5,10 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 )
+
+type JsonUtil interface {
+	ToJSON(w http.ResponseWriter, data any) error
+	FromJSON(r io.Reader, data any) error
+}
+
+type ModelJsonUtil struct {
+}
+
+func (m *ModelJsonUtil) ToJSON(w http.ResponseWriter, data any) error {
+	w.Header().Set("Content-Type", "application/json")
+	e := json.NewEncoder(w)
+	e.SetIndent("", "\t")
+	return e.Encode(data)
+}
+
+func (m *ModelJsonUtil) FromJSON(r io.Reader, data any) error {
+	e := json.NewDecoder(r)
+	return e.Decode(data)
+}
 
 type Pet struct {
 	ID   int    `json:"-"`
@@ -30,7 +51,8 @@ func (p *Pet) FromJSON(r io.Reader) error {
 	return e.Decode(p)
 }
 
-func (p *Pet) ToJSON(w io.Writer) error {
+func (p *Pet) ToJSON(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	e := json.NewEncoder(w)
 	e.SetIndent("", "\t")
 	return e.Encode(p)
@@ -42,17 +64,17 @@ func (p *Pet) Validate() error {
 	return validate.Struct(p)
 }
 
-func (m PetModel) All() ([]Pet, error) {
+func (m PetModel) All() (Pets, error) {
 	rows, err := m.DB.Query("SELECT * FROM pets")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var pets []Pet
+	var pets []*Pet
 
 	// Loop through rows, using Scan to assign column data to struct fields
 	for rows.Next() {
-		pet := Pet{}
+		pet := &Pet{}
 		if err := rows.Scan(&pet.ID, &pet.Name, &pet.Sex, &pet.Age, &pet.KeptSince); err != nil {
 			return pets, err
 		}
@@ -117,7 +139,8 @@ func FindPet(id int) (int, error) {
 
 type Pets []*Pet
 
-func (p *Pets) ToJSON(w io.Writer) error {
+func (p *Pets) ToJSON(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
 	e := json.NewEncoder(w)
 	e.SetIndent("", "\t")
 	return e.Encode(p)

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,7 +15,7 @@ import (
 type Pets struct {
 	l    *log.Logger
 	pets interface {
-		All() ([]data.Pet, error)
+		All() (data.Pets, error)
 	}
 }
 
@@ -35,8 +34,8 @@ func (p Pets) MountRoutes(r chi.Router) {
 func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle GET Pets")
 
-	// fetch the pets from datastore
-	petList := data.GetPets()
+	// fetch the pets from datastore without db
+	// petList := data.GetPets()
 
 	pets, err := p.pets.All()
 
@@ -44,14 +43,8 @@ func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 		p.l.Printf("Error: %#v", err)
 	}
 
-	e := json.NewEncoder(w)
-	e.SetIndent("", "\t")
-	e.Encode(pets)
-
-	w.Header().Set("Content-Type", "application/json")
-
 	// serialize to JSON
-	err = petList.ToJSON(w)
+	err = pets.ToJSON(w)
 	if err != nil {
 		http.Error(w, "Unable to marshal json", http.StatusInternalServerError)
 	}
@@ -62,9 +55,14 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 
 	pet := &data.Pet{}
 
+	var jsonUtil data.JsonUtil = &data.ModelJsonUtil{}
+
+	err := jsonUtil.FromJSON(r.Body, pet)
+
 	//  decode data
-	err := pet.FromJSON(r.Body)
+	// err := pet.FromJSON(r.Body)
 	if err != nil {
+		println(err.Error())
 		http.Error(w, "Unable to decode json", http.StatusBadRequest)
 		return
 	}
