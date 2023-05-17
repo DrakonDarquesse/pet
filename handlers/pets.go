@@ -17,11 +17,13 @@ type Pets struct {
 	pets interface {
 		All() (data.Pets, error)
 	}
+	jsonUtil data.JsonUtil
 }
 
 // Initialize Pets with logger and PetModel
 func NewPets(l *log.Logger, db *sql.DB) *Pets {
-	return &Pets{l, data.PetModel{DB: db}}
+	var jsonUtil data.JsonUtil
+	return &Pets{l, data.PetModel{DB: db}, jsonUtil}
 }
 
 func (p Pets) MountRoutes(r chi.Router) {
@@ -55,9 +57,9 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 
 	pet := &data.Pet{}
 
-	var jsonUtil data.JsonUtil = &data.ModelJsonUtil{}
+	p.jsonUtil = &data.ModelJsonUtil{}
 
-	err := jsonUtil.FromJSON(r.Body, pet)
+	err := p.jsonUtil.FromJSON(r.Body, pet)
 
 	//  decode data
 	// err := pet.FromJSON(r.Body)
