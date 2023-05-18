@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,8 +91,7 @@ func validateDate(fl validator.FieldLevel) bool {
 	return err != nil
 }
 
-func (m PetModel) AddPet(p *Pet) {
-	petList = append(petList, p)
+func (m PetModel) AddPet(p *Pet) error {
 	var sqlStatement = `
 	INSERT INTO pets (name, gender, age, keptsince)
 	VALUES ($1, $2, $3, $4)
@@ -99,18 +99,32 @@ func (m PetModel) AddPet(p *Pet) {
 	id := 0
 	err := m.DB.QueryRow(sqlStatement, p.Name, p.Sex, p.Age, p.KeptSince).Scan(&id)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("New record ID is:", id)
+	return nil
 }
 
-func UpdatePet(id int, p *Pet) error {
-	pos, err := FindPet(id)
+func (m PetModel) UpdatePet(id int, p *Pet) error {
+	var sqlStatement = `
+	UPDATE pets
+	SET name = $1,
+		gender = $2,
+		age = $3,
+		keptsince = $4 
+	WHERE id = $5`
+
+	result, err := m.DB.Exec(sqlStatement, p.Name, p.Sex, p.Age, p.KeptSince, id)
 	if err != nil {
 		return err
 	}
-	p.ID = id
-	petList[pos] = p
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count < 1 {
+		return errors.New("No data is updated")
+	}
 	return nil
 }
 

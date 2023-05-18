@@ -17,7 +17,8 @@ type Pets struct {
 	l    *log.Logger
 	pets interface {
 		All() (data.Pets, error)
-		AddPet(p *data.Pet)
+		AddPet(p *data.Pet) error
+		UpdatePet(id int, p *data.Pet) error
 	}
 	jsonUtil interface {
 		ToJSON(w http.ResponseWriter, data any) error
@@ -32,7 +33,7 @@ func NewPets(l *log.Logger, db *sql.DB) *Pets {
 
 func (p Pets) MountRoutes(r chi.Router) {
 	r.Get("/", p.GetPets)
-	r.Post("/add", p.AddPet)
+	r.Post("/", p.AddPet)
 	r.Put("/{id:[0-9]+}", p.UpdatePet)
 	r.Delete("/{id:[0-9]+}", p.DeletePet)
 }
@@ -64,8 +65,7 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 	err := p.jsonUtil.FromJSON(r.Body, pet)
 
 	if err != nil {
-		println(err.Error())
-		http.Error(w, "Unable to decode json", http.StatusBadRequest)
+		http.Error(w, "Invalid Input Format", http.StatusBadRequest)
 		return
 	}
 
@@ -79,8 +79,11 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 
 	p.l.Printf("Pet: %#v", pet)
 	p.pets.AddPet(pet)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusBadRequest)
+		return
+	}
 	w.Write([]byte("Create Success"))
-
 }
 
 func (p Pets) UpdatePet(w http.ResponseWriter, r *http.Request) {
@@ -104,11 +107,12 @@ func (p Pets) UpdatePet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p.l.Printf("Pet: %#v", pet)
-	err = data.UpdatePet(id, pet)
+	err = p.pets.UpdatePet(id, pet)
 	if err != nil {
-		http.Error(w, "Pet not found", http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusBadRequest)
+		return
 	}
+	w.Write([]byte("Update Success"))
 }
 
 func (p Pets) DeletePet(w http.ResponseWriter, r *http.Request) {
