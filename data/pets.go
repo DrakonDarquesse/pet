@@ -11,24 +11,22 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type JsonUtil interface {
-	ToJSON(w http.ResponseWriter, data any) error
-	FromJSON(r io.Reader, data any) error
+type JsonUtil struct {
 }
 
-type ModelJsonUtil struct {
-}
-
-func (m *ModelJsonUtil) ToJSON(w http.ResponseWriter, data any) error {
+func (j *JsonUtil) ToJSON(w http.ResponseWriter, data any) error {
 	w.Header().Set("Content-Type", "application/json")
 	e := json.NewEncoder(w)
 	e.SetIndent("", "\t")
 	return e.Encode(data)
 }
 
-func (m *ModelJsonUtil) FromJSON(r io.Reader, data any) error {
+func (j *JsonUtil) FromJSON(r io.Reader, data any) error {
 	e := json.NewDecoder(r)
 	return e.Decode(data)
+}
+
+type Animal struct {
 }
 
 type Pet struct {
@@ -37,8 +35,8 @@ type Pet struct {
 	// Animal
 	// Description string
 	Sex       string `json:"gender" validate:"required"`
-	Age       int    `json:"age,omitempty" validate:"gte=0,lte=100"`
-	KeptSince string `json:"kept since,omitempty" validate:"date"`
+	Age       int    `json:"age,omitempty" validate:"required,gte=0,lte=100"`
+	KeptSince string `json:"kept since,omitempty" validate:"required,date"`
 }
 
 // A custom PetModel that wraps sql.DB connection pool
@@ -92,18 +90,18 @@ func validateDate(fl validator.FieldLevel) bool {
 	return err != nil
 }
 
-func AddPet(p *Pet) {
+func (m PetModel) AddPet(p *Pet) {
 	petList = append(petList, p)
-	// var sqlStatement = `
-	// INSERT INTO pets (name, gender, age, keptsince)
-	// VALUES ($1, $2, $3, $4)
-	// RETURNING id`
-	// id := 0
-	// err = db.QueryRow(sqlStatement, "Mimi", "m", 1, time.Date(2022, 5, 28, 0, 0, 0, 0, time.UTC).UTC().String()).Scan(&id)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println("New record ID is:", id)
+	var sqlStatement = `
+	INSERT INTO pets (name, gender, age, keptsince)
+	VALUES ($1, $2, $3, $4)
+	RETURNING id`
+	id := 0
+	err := m.DB.QueryRow(sqlStatement, p.Name, p.Sex, p.Age, p.KeptSince).Scan(&id)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("New record ID is:", id)
 }
 
 func UpdatePet(id int, p *Pet) error {

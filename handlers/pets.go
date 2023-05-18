@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,14 +17,17 @@ type Pets struct {
 	l    *log.Logger
 	pets interface {
 		All() (data.Pets, error)
+		AddPet(p *data.Pet)
 	}
-	jsonUtil data.JsonUtil
+	jsonUtil interface {
+		ToJSON(w http.ResponseWriter, data any) error
+		FromJSON(r io.Reader, data any) error
+	}
 }
 
 // Initialize Pets with logger and PetModel
 func NewPets(l *log.Logger, db *sql.DB) *Pets {
-	var jsonUtil data.JsonUtil
-	return &Pets{l, data.PetModel{DB: db}, jsonUtil}
+	return &Pets{l, data.PetModel{DB: db}, &data.JsonUtil{}}
 }
 
 func (p Pets) MountRoutes(r chi.Router) {
@@ -57,12 +61,8 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 
 	pet := &data.Pet{}
 
-	p.jsonUtil = &data.ModelJsonUtil{}
-
 	err := p.jsonUtil.FromJSON(r.Body, pet)
 
-	//  decode data
-	// err := pet.FromJSON(r.Body)
 	if err != nil {
 		println(err.Error())
 		http.Error(w, "Unable to decode json", http.StatusBadRequest)
@@ -78,7 +78,7 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.l.Printf("Pet: %#v", pet)
-	data.AddPet(pet)
+	p.pets.AddPet(pet)
 	w.Write([]byte("Create Success"))
 
 }

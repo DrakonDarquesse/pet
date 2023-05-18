@@ -15,5 +15,4 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 COPY --from=builder /go/bin/app /app
 ENTRYPOINT /app
-LABEL Name=pet Version=0.0.1
-EXPOSE 9898
+EXPOSE 9898 5432
