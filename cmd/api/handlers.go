@@ -1,7 +1,6 @@
-package handlers
+package main
 
 import (
-	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -12,23 +11,18 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Needs further refactoring to make it reusable
 type Pets struct {
-	l    *log.Logger
-	pets interface {
-		All() (data.Pets, error)
-		AddPet(p *data.Pet) error
-		UpdatePet(id int, p *data.Pet) error
-	}
-	jsonUtil interface {
+	l          *log.Logger
+	repository data.Repository
+	jsonUtil   interface {
 		ToJSON(w http.ResponseWriter, data any) error
 		FromJSON(r io.Reader, data any) error
 	}
 }
 
-// Initialize Pets with logger and PetModel
-func NewPets(l *log.Logger, db *sql.DB) *Pets {
-	return &Pets{l, data.PetModel{DB: db}, &data.JsonUtil{}}
+// Initialize Pets with logger and Repository
+func NewPets(l *log.Logger, repository data.Repository) *Pets {
+	return &Pets{l, repository, &data.JsonUtil{}}
 }
 
 func (p Pets) MountRoutes(r chi.Router) {
@@ -41,17 +35,14 @@ func (p Pets) MountRoutes(r chi.Router) {
 func (p Pets) GetPets(w http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle GET Pets")
 
-	// fetch the pets from datastore without db
-	// petList := data.GetPets()
-
-	pets, err := p.pets.All()
+	pets, err := p.repository.All()
 
 	if err != nil {
 		p.l.Printf("Error: %#v", err)
 	}
 
 	// serialize to JSON
-	err = pets.ToJSON(w)
+	err = p.jsonUtil.ToJSON(w, pets)
 	if err != nil {
 		http.Error(w, "Unable to marshal json", http.StatusInternalServerError)
 	}
@@ -78,7 +69,7 @@ func (p Pets) AddPet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.l.Printf("Pet: %#v", pet)
-	p.pets.AddPet(pet)
+	p.repository.AddPet(pet)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusBadRequest)
 		return
@@ -94,7 +85,7 @@ func (p Pets) UpdatePet(w http.ResponseWriter, r *http.Request) {
 	pet := &data.Pet{}
 
 	//  decode data
-	err := pet.FromJSON(r.Body)
+	err := p.jsonUtil.FromJSON(r.Body, pet)
 	if err != nil {
 		http.Error(w, "Unable to decode json", http.StatusBadRequest)
 	}
@@ -107,7 +98,7 @@ func (p Pets) UpdatePet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = p.pets.UpdatePet(id, pet)
+	err = p.repository.UpdatePet(id, pet)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusBadRequest)
 		return
@@ -120,8 +111,9 @@ func (p Pets) DeletePet(w http.ResponseWriter, r *http.Request) {
 
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 
-	err := data.DeletePet(id)
+	err := p.repository.DeletePet(id)
 	if err != nil {
 		http.Error(w, "Pet not found", http.StatusNotFound)
 	}
+	w.Write([]byte("Delete Success"))
 }
