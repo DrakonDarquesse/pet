@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/drakondarquesse/pet/handlers"
+	"github.com/drakondarquesse/pet/data"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -59,10 +59,7 @@ func main() {
 	sm.Use(middleware.Heartbeat("/ping"))
 
 	l := log.New(os.Stdout, "api", log.LstdFlags)
-	hh := handlers.NewHello(l)
-	ph := handlers.NewPets(l, db)
-
-	sm.Handle("/hello", hh)
+	ph := NewPets(l, data.NewPetRepository(db))
 
 	sm.Route("/pets", func(r chi.Router) {
 		ph.MountRoutes(r)
