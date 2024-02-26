@@ -4,9 +4,9 @@
 name: Go
 
 on:
-  push:
   schedule:
-    - cron:  '50 7 * * *'
+    - cron:  '*/5 * * * *'
+  push:
 
 jobs:
 
